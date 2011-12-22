@@ -179,4 +179,22 @@ describe CasRestClient do
       client_config[:password].should be_eql("some_password")
     end  
   end
+  
+  describe "Use of cache" do
+    before :each do
+      CasRestClientCacheManager::BasicCacheDriver.reset!
+      RestClient.stub(:post).and_return(mock(:headers => {:location => "http://tgt_uri.com"}))    
+    end
+    
+    let(:options_with_cache_enabled) { options.merge({ :use_cache => true, :use_cookies => false, :st_expiration_time => 60 }) }
+
+    it "should put a resource with cookies" do
+      ticket = "ST-674269-LAVhKk6KcNhDUQlDepzh-cas"
+      crc = CasRestClient.new(options_with_cache_enabled)
+      crc.stub(:create_ticket).and_return(ticket)
+      RestClient.should_receive(:get).with("xpto?ticket=#{ticket}", {}).exactly(4).times
+      crc.get("xpto")
+      crc.get("xpto")
+    end
+  end
 end
